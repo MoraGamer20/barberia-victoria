@@ -1,73 +1,161 @@
 'use client';
 
-import { useState } from 'react';
-import { Edit2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
-const MOCK_SERVICES = [
-  { id: 's1', area: 'barberia', name: 'Corte Clásico', durationMinutes: 30, price: 150, isActive: true },
-  { id: 's2', area: 'barberia', name: 'Corte + Barba', durationMinutes: 60, price: 250, isActive: true },
-  { id: 's3', area: 'estetica', name: 'Tinte Completo', durationMinutes: 90, price: 800, isActive: true },
-  { id: 's4', area: 'estetica', name: 'Manicura', durationMinutes: 45, price: 200, isActive: false },
-];
+export default function ServicesPage() {
+  const { user } = useAuth();
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingService, setEditingService] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-export default function ServicesManagement() {
-  const [services, setServices] = useState(MOCK_SERVICES);
+  useEffect(() => {
+    fetchServices();
+  }, [user]);
 
-  const toggleActive = (id: string) => {
-    setServices(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
-  };
+  async function fetchServices() {
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/admin/services', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.services) setServices(data.services);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveService(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!user) return;
+    const token = await user.getIdToken();
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      name: formData.get('name'),
+      area: formData.get('area'),
+      durationMinutes: Number(formData.get('durationMinutes')),
+      price: Number(formData.get('price')),
+      isActive: formData.get('isActive') === 'on'
+    };
+
+    try {
+      const method = editingService?.id ? 'PUT' : 'POST';
+      const body = editingService?.id ? { ...payload, id: editingService.id } : payload;
+      
+      await fetch('/api/admin/services', {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      
+      setIsModalOpen(false);
+      setEditingService(null);
+      fetchServices();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  if (loading) return <div className="text-white">Cargando...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-white">Gestión de Servicios</h1>
-        <button className="bg-gold-500 hover:bg-gold-600 text-dark-900 font-bold py-2 px-4 rounded-lg transition-colors">
+        <h1 className="text-3xl font-bold text-white">Servicios</h1>
+        <button 
+          onClick={() => { setEditingService(null); setIsModalOpen(true); }}
+          className="bg-gold-500 text-dark-900 px-4 py-2 rounded-lg font-bold hover:bg-gold-600"
+        >
           + Nuevo Servicio
         </button>
       </div>
 
       <div className="bg-dark-800 rounded-xl border border-white/5 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-dark-700 text-gray-300 text-sm">
+        <table className="w-full text-left text-white">
+          <thead className="bg-dark-700 border-b border-white/5">
             <tr>
-              <th className="p-4 font-medium">Servicio</th>
-              <th className="p-4 font-medium">Área</th>
-              <th className="p-4 font-medium">Duración</th>
-              <th className="p-4 font-medium">Precio</th>
-              <th className="p-4 font-medium text-center">Estado</th>
-              <th className="p-4 font-medium text-right">Acciones</th>
+              <th className="p-4">Nombre</th>
+              <th className="p-4">Área</th>
+              <th className="p-4">Duración (min)</th>
+              <th className="p-4">Precio</th>
+              <th className="p-4">Estado</th>
+              <th className="p-4">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
-            {services.map(service => (
-              <tr key={service.id} className={`hover:bg-dark-700/50 transition-colors ${!service.isActive ? 'opacity-50' : ''}`}>
-                <td className="p-4 text-white font-medium">{service.name}</td>
-                <td className="p-4 text-gray-300 capitalize">{service.area}</td>
-                <td className="p-4 text-gray-300">{service.durationMinutes} min</td>
-                <td className="p-4 text-gold-500 font-bold">${service.price}</td>
-                <td className="p-4 text-center">
-                  <span className={`px-2 py-1 rounded text-xs uppercase tracking-wider border ${service.isActive ? 'text-green-400 bg-green-400/10 border-green-400/20' : 'text-gray-400 bg-gray-400/10 border-gray-400/20'}`}>
-                    {service.isActive ? 'Activo' : 'Inactivo'}
+          <tbody>
+            {services.map(s => (
+              <tr key={s.id} className="border-b border-white/5 hover:bg-white/5">
+                <td className="p-4 font-bold">{s.name}</td>
+                <td className="p-4 capitalize">{s.area}</td>
+                <td className="p-4">{s.durationMinutes}</td>
+                <td className="p-4">${s.price}</td>
+                <td className="p-4">
+                  <span className={`px-2 py-1 text-xs rounded-full ${s.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {s.isActive ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
                 <td className="p-4">
-                  <div className="flex items-center justify-end gap-2">
-                    <button className="p-2 hover:bg-dark-900 rounded-lg text-gray-400 hover:text-white transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => toggleActive(service.id)}
-                      className={`p-2 hover:bg-dark-900 rounded-lg transition-colors ${service.isActive ? 'text-green-500 hover:text-gray-400' : 'text-gray-500 hover:text-green-400'}`}
-                    >
-                      {service.isActive ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => { setEditingService(s); setIsModalOpen(true); }}
+                    className="text-gold-500 hover:text-white"
+                  >
+                    Editar
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-800 p-6 rounded-xl w-full max-w-md border border-white/10">
+            <h2 className="text-xl font-bold text-white mb-4">
+              {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
+            </h2>
+            <form onSubmit={saveService} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Nombre</label>
+                <input required defaultValue={editingService?.name} name="name" className="w-full p-2 bg-dark-900 rounded border border-white/10 text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Área</label>
+                <select name="area" defaultValue={editingService?.area || 'barberia'} className="w-full p-2 bg-dark-900 rounded border border-white/10 text-white">
+                  <option value="barberia">Barbería</option>
+                  <option value="estetica">Estética</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Duración (min)</label>
+                  <input required type="number" defaultValue={editingService?.durationMinutes} name="durationMinutes" className="w-full p-2 bg-dark-900 rounded border border-white/10 text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Precio ($)</label>
+                  <input required type="number" defaultValue={editingService?.price} name="price" className="w-full p-2 bg-dark-900 rounded border border-white/10 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input type="checkbox" name="isActive" id="isActive" defaultChecked={editingService ? editingService.isActive : true} />
+                <label htmlFor="isActive" className="text-white">Servicio Activo</label>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 p-2 bg-dark-700 rounded text-white hover:bg-dark-600">Cancelar</button>
+                <button type="submit" className="flex-1 p-2 bg-gold-500 rounded text-dark-900 font-bold hover:bg-gold-600">Guardar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

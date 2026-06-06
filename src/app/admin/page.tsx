@@ -19,27 +19,28 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real scenario with server validation, we would fetch from /api/admin/dashboard
-    // using the Firebase ID token in the Authorization header.
-    // For this MVP presentation, we use mock data to show the layout requested.
-    
-    setTimeout(() => {
-      setStats({
-        today: 5,
-        thisWeek: 24,
-        completed: 12,
-        cancelled: 2,
-        nextAppointment: { time: '14:00', client: 'Carlos R.', area: 'Barbería' }
-      });
+    async function loadDashboard() {
+      if (!user) return;
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/admin/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!res.ok) throw new Error('Error loading dashboard');
+        const data = await res.json();
+        setStats(data.stats);
+        setTodayAppointments(data.todayAppointments);
+      } catch (err) {
+        console.error('Dashboard Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-      setTodayAppointments([
-        { id: '1', startTime: '10:00', endTime: '10:30', customerName: 'Juan Pérez', serviceName: 'Corte Clásico', professionalName: 'Alejandro', area: 'barberia', status: 'completed' },
-        { id: '2', startTime: '11:00', endTime: '12:30', customerName: 'María G.', serviceName: 'Tinte Completo', professionalName: 'Ana', area: 'estetica', status: 'confirmed' },
-        { id: '3', startTime: '14:00', endTime: '14:30', customerName: 'Carlos R.', serviceName: 'Corte + Barba', professionalName: 'Alejandro', area: 'barberia', status: 'confirmed' },
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    loadDashboard();
+  }, [user]);
 
   if (loading) return <div className="text-white">Cargando dashboard...</div>;
 

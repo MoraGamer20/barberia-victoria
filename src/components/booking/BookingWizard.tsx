@@ -5,17 +5,7 @@ import { Area, Service, Professional, CustomerData, BookingState } from '@/types
 import { format, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// Mocks locales temporales hasta que se cree la ruta GET de catálogos (Fase 4). 
-// Solo utilizaremos la API para /api/availability y /api/appointments como se pidió.
-const MOCK_SERVICES: Service[] = [
-  { id: 's1', area: 'barberia', name: 'Corte Clásico', durationMinutes: 30, price: 150 },
-  { id: 's2', area: 'estetica', name: 'Tinte Completo', durationMinutes: 90, price: 800 },
-];
-
-const MOCK_PROFESSIONALS: Professional[] = [
-  { id: 'p1', area: 'barberia', name: 'Alejandro' },
-  { id: 'p2', area: 'estetica', name: 'María' },
-];
+// Mock data removed. Data is fetched from API.
 
 export default function BookingWizard() {
   const [step, setStep] = useState(1);
@@ -29,6 +19,8 @@ export default function BookingWizard() {
   });
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -36,6 +28,24 @@ export default function BookingWizard() {
     setState(prev => ({ ...prev, area, service: null, professional: null, date: null, time: null }));
     setStep(2);
   };
+  
+  useEffect(() => {
+    async function fetchCatalogs() {
+      try {
+        const [servRes, profRes] = await Promise.all([
+          fetch('/api/services'),
+          fetch('/api/professionals')
+        ]);
+        const servData = await servRes.json();
+        const profData = await profRes.json();
+        if (servData.services) setServices(servData.services);
+        if (profData.professionals) setProfessionals(profData.professionals);
+      } catch (err) {
+        console.error('Error fetching catalogs', err);
+      }
+    }
+    fetchCatalogs();
+  }, []);
   
   const setService = (service: Service) => {
     setState(prev => ({ ...prev, service, professional: null, date: null, time: null }));
@@ -114,8 +124,8 @@ export default function BookingWizard() {
     }
   };
 
-  const filteredServices = MOCK_SERVICES.filter(s => s.area === state.area);
-  const filteredProfessionals = MOCK_PROFESSIONALS.filter(p => p.area === state.area);
+  const filteredServices = services.filter(s => s.area === state.area);
+  const filteredProfessionals = professionals.filter(p => p.area === state.area);
 
   // Generate next 7 days for date selector (starting today if not too late, or tomorrow)
   const nextDays = Array.from({ length: 7 }).map((_, i) => format(addDays(new Date(), i), 'yyyy-MM-dd'));
