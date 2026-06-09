@@ -1,32 +1,58 @@
-const WHATSAPP_NUMBER = '5211234567890';
+'use client';
 
-const HOURS = [
-  { day: 'Lunes a Sábado', hours: '9:00 AM — 8:00 PM' },
-  { day: 'Domingo', hours: 'Cerrado' },
-];
+import { useEffect, useState } from 'react';
+
+const defaultSettings = {
+  whatsappNumber: '528341656549',
+  openingTime: '09:00',
+  closingTime: '20:00',
+  address: 'Calle Principal #123, Centro',
+  instagram: 'https://www.instagram.com/',
+  facebook: 'https://www.facebook.com/',
+};
 
 export default function ContactSection() {
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola, me gustaría obtener más información.')}`;
+  const [settings, setSettings] = useState(defaultSettings);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/business-settings');
+        const data = await res.json();
+        if (data.settings) {
+          setSettings({
+            whatsappNumber: data.settings.whatsappNumber || defaultSettings.whatsappNumber,
+            openingTime: data.settings.openingTime || defaultSettings.openingTime,
+            closingTime: data.settings.closingTime || defaultSettings.closingTime,
+            address: data.settings.address || defaultSettings.address,
+            instagram: data.settings.instagram || defaultSettings.instagram,
+            facebook: data.settings.facebook || defaultSettings.facebook,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading business settings', error);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  const whatsappNumber = settings.whatsappNumber.replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Hola, me gustaría obtener más información.')}`;
 
   return (
     <section id="contacto" className="py-24 bg-dark-900 relative overflow-hidden">
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gold-500/5 rounded-full blur-3xl pointer-events-none" />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16">
           <span className="text-gold-500 font-medium tracking-widest uppercase text-sm">Encuéntranos</span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white mt-3 mb-4">
-            Visítanos o <span className="text-gold-500">Contáctanos</span>
-          </h2>
-          <p className="text-gray-400 max-w-xl mx-auto text-lg">
-            Estamos listos para atenderte. Reserva en línea o contáctanos directamente por WhatsApp.
-          </p>
+          <h2 className="text-4xl sm:text-5xl font-black text-white mt-3 mb-4">Visítanos o <span className="text-gold-500">Contáctanos</span></h2>
+          <p className="text-gray-400 max-w-xl mx-auto text-lg">Estamos listos para atenderte. Reserva en línea o contáctanos directamente por WhatsApp.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Contact Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* WhatsApp card */}
             <a
               href={whatsappUrl}
               target="_blank"
@@ -41,43 +67,40 @@ export default function ContactSection() {
               </div>
               <div>
                 <p className="text-[#25D366] font-bold text-sm uppercase tracking-wider">WhatsApp Directo</p>
-                <p className="text-white font-medium">(521) 123-4567-890</p>
+                <p className="text-white font-medium">{settings.whatsappNumber}</p>
                 <p className="text-gray-400 text-sm group-hover:text-[#25D366] transition-colors">Toca para abrir WhatsApp →</p>
               </div>
             </a>
 
-            {/* Hours */}
             <div className="p-5 bg-dark-800 border border-white/5 rounded-2xl">
               <p className="text-gold-500 font-bold uppercase tracking-wider text-sm mb-4">🕐 Horarios de Atención</p>
               <div className="space-y-3">
-                {HOURS.map(item => (
-                  <div key={item.day} className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">{item.day}</span>
-                    <span className={`font-bold text-sm ${item.hours === 'Cerrado' ? 'text-red-400' : 'text-white'}`}>
-                      {item.hours}
-                    </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Horario</span>
+                  <span className="font-bold text-sm text-white">{settings.openingTime} – {settings.closingTime}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Redes</span>
+                  <div className="flex gap-2 text-sm text-gold-500">
+                    {settings.instagram && <a href={settings.instagram} target="_blank" rel="noreferrer">Instagram</a>}
+                    {settings.facebook && <a href={settings.facebook} target="_blank" rel="noreferrer">Facebook</a>}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
-            {/* Address */}
             <div className="p-5 bg-dark-800 border border-white/5 rounded-2xl">
               <p className="text-gold-500 font-bold uppercase tracking-wider text-sm mb-3">📍 Dirección</p>
-              <p className="text-white font-medium">Calle Principal #123</p>
-              <p className="text-gray-400 text-sm">Col. Centro, C.P. 12345</p>
-              <p className="text-gray-400 text-sm">Ciudad, Estado</p>
+              <p className="text-white font-medium">{settings.address}</p>
             </div>
           </div>
 
-          {/* Map Embed */}
           <div className="lg:col-span-3 rounded-2xl overflow-hidden border border-white/10 min-h-[400px] bg-dark-800 relative">
-            {/* Placeholder map with Google Maps embed structure */}
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d120959.27!2d-99.1332!3d19.4326!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d1ff35f5bd1563%3A0x6c366f0e2de02ff7!2sCiudad%20de%20M%C3%A9xico!5e0!3m2!1ses!2smx!4v1680000000000"
               width="100%"
               height="100%"
-              style={{ border: 0, minHeight: '400px' }}
+              className="border-0 min-h-[400px]"
               allowFullScreen={true}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -86,7 +109,6 @@ export default function ContactSection() {
           </div>
         </div>
 
-        {/* Footer bar */}
         <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
           <p>© 2026 Lumen Studio. Todos los derechos reservados.</p>
           <p>Barbería & Estética Unisex — Reservas en línea 24/7</p>

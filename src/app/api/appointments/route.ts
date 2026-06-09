@@ -5,6 +5,7 @@ import { adminDb } from '@/lib/firebase/admin';
 import * as admin from 'firebase-admin';
 import { addMinutes, parse, format, startOfDay, isBefore } from 'date-fns';
 import { calculateAvailableSlots } from '@/lib/timeUtils';
+import { createCalendarEvent } from '@/lib/googleCalendar';
 
 export async function POST(request: Request) {
   try {
@@ -114,12 +115,14 @@ export async function POST(request: Request) {
         notes: notes || null,
         area: professional.area,
         professionalId,
+        professionalName: professional.name,
         serviceId,
         serviceName: service.name,
         date,
         startTime,
         endTime,
         status: 'confirmed', // As requested
+        googleCalendarEventId: null as string | null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
@@ -128,6 +131,34 @@ export async function POST(request: Request) {
 
       return appointmentData;
     });
+
+    // Google Calendar Sync
+    if (process.env.NEXT_PUBLIC_ENABLE_GOOGLE_CALENDAR === 'true') {
+      try {
+        const eventId = await createCalendarEvent({
+          customerName: result.customerName,
+          customerPhone: result.customerPhone,
+          customerEmail: result.customerEmail,
+          notes: result.notes,
+          serviceName: result.serviceName,
+          professionalName: result.professionalName,
+          date: result.date,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          status: result.status,
+        });
+
+        if (eventId) {
+          await adminDb.collection('appointments').doc(result.id).update({
+            googleCalendarEventId: eventId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          result.googleCalendarEventId = eventId;
+        }
+      } catch (calErr) {
+        console.error('[Google Calendar] Post-booking sync error:', calErr);
+      }
+    }
 
     return NextResponse.json({ success: true, appointment: result });
 

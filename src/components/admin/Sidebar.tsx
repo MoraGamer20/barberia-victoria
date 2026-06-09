@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Users, Scissors, Clock, LogOut, LayoutDashboard } from 'lucide-react';
+import { Calendar, Users, Scissors, Clock, LogOut, LayoutDashboard, Tag, Settings } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { name: 'Bloqueos', href: '/admin/blocks', icon: Clock },
   { name: 'Servicios', href: '/admin/services', icon: Scissors },
   { name: 'Profesionales', href: '/admin/professionals', icon: Users },
+  { name: 'Promociones', href: '/admin/promotions', icon: Tag },
+  { name: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 
 export default function Sidebar() {

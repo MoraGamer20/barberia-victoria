@@ -1,8 +1,28 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function HeroSection() {
-  const whatsappUrl = 'https://wa.me/5211234567890?text=Hola%2C%20me%20gustaría%20obtener%20más%20información.';
+  const [whatsappNumber, setWhatsappNumber] = useState('528341656549');
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/business-settings');
+        const data = await res.json();
+        if (data.settings?.whatsappNumber) {
+          setWhatsappNumber(data.settings.whatsappNumber.replace(/\D/g, ''));
+        }
+      } catch (err) {
+        console.error('Error fetching settings for Hero:', err);
+      }
+    }
+    void fetchSettings();
+  }, []);
+
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Hola, me gustaría obtener más información.')}`;
 
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">

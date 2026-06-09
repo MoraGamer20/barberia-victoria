@@ -23,6 +23,7 @@ export default function BookingWizard() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('528341656549');
 
   const setArea = (area: Area) => {
     setState(prev => ({ ...prev, area, service: null, professional: null, date: null, time: null }));
@@ -32,19 +33,24 @@ export default function BookingWizard() {
   useEffect(() => {
     async function fetchCatalogs() {
       try {
-        const [servRes, profRes] = await Promise.all([
+        const [servRes, profRes, settingsRes] = await Promise.all([
           fetch('/api/services'),
-          fetch('/api/professionals')
+          fetch('/api/professionals'),
+          fetch('/api/business-settings')
         ]);
         const servData = await servRes.json();
         const profData = await profRes.json();
+        const settingsData = await settingsRes.json();
         if (servData.services) setServices(servData.services);
         if (profData.professionals) setProfessionals(profData.professionals);
+        if (settingsData.settings?.whatsappNumber) {
+          setWhatsappNumber(settingsData.settings.whatsappNumber.replace(/\D/g, ''));
+        }
       } catch (err) {
-        console.error('Error fetching catalogs', err);
+        console.error('Error fetching catalogs and settings', err);
       }
     }
-    fetchCatalogs();
+    void fetchCatalogs();
   }, []);
   
   const setService = (service: Service) => {
@@ -269,9 +275,21 @@ export default function BookingWizard() {
         <div className="space-y-6 text-center py-8">
           <h3 className="text-3xl font-bold text-white mb-2">¡Cita Confirmada! ✅</h3>
           <p className="text-gray-400 mb-4">Reserva para {state.date} a las {state.time}</p>
-          <button className="w-full px-6 py-4 bg-[#25D366] text-white font-bold rounded-lg flex justify-center items-center gap-2">
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+              `Hola, acabo de reservar una cita:\n` +
+              `📅 Fecha: ${state.date}\n` +
+              `🕐 Hora: ${state.time}\n` +
+              `💈 Servicio: ${state.service?.name || ''}\n` +
+              `👤 Profesional: ${state.professional?.name || ''}\n` +
+              `Quedo atento a la confirmación.`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full px-6 py-4 bg-[#25D366] text-white font-bold rounded-lg flex justify-center items-center gap-2 hover:bg-[#1da851] transition-colors"
+          >
             Confirmar por WhatsApp
-          </button>
+          </a>
         </div>
       )}
     </div>

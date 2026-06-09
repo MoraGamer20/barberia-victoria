@@ -10,7 +10,10 @@ export async function GET() {
       openingTime: '09:00',
       closingTime: '20:00',
       closedDays: [0], // Sunday
-      whatsappNumber: '5211234567890'
+      whatsappNumber: '528341656549',
+      address: 'Calle Principal #123, Centro',
+      instagram: 'https://www.instagram.com/',
+      facebook: 'https://www.facebook.com/'
     });
 
     // 2. Professionals
@@ -85,6 +88,86 @@ export async function GET() {
       endTime: '11:00',
       reason: 'Cita personal'
     });
+
+    // 5. Promotions
+    const promotionsSeed = [
+      {
+        id: 'promo1',
+        emoji: '🔥',
+        tag: 'MÁS POPULAR',
+        tagColor: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+        name: 'Corte + Barba Premium',
+        description: 'Corte personalizado + perfilado de barba + mascarilla facial de regalo.',
+        originalPrice: 300,
+        promoPrice: 250,
+        discount: '17% OFF',
+        validFrom: '2026-06-01',
+        validTo: '2026-07-31',
+        imageUrl: null,
+        order: 1,
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now()
+      },
+      {
+        id: 'promo2',
+        emoji: '👨‍👦',
+        tag: 'ESPECIAL FAMILIA',
+        tagColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+        name: 'Paquete Padre e Hijo',
+        description: 'Corte para papá + corte infantil. El mejor plan para dos caballeros.',
+        originalPrice: 250,
+        promoPrice: 200,
+        discount: '20% OFF',
+        validFrom: '2026-06-01',
+        validTo: '2026-08-31',
+        imageUrl: null,
+        order: 2,
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now()
+      },
+      {
+        id: 'promo3',
+        emoji: '📅',
+        tag: 'ENTRE SEMANA',
+        tagColor: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+        name: 'Descuento Lunes a Miércoles',
+        description: 'Todos nuestros servicios de barbería con 15% de descuento los primeros días de la semana.',
+        originalPrice: null,
+        promoPrice: null,
+        discount: '15% OFF',
+        validFrom: '2026-06-01',
+        validTo: '2026-12-31',
+        imageUrl: null,
+        order: 3,
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now()
+      },
+      {
+        id: 'promo4',
+        emoji: '💎',
+        tag: 'ESTÉTICA',
+        tagColor: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
+        name: 'Transformación Completa',
+        description: 'Tinte + tratamiento hidratante + corte de puntas. Renueva tu imagen.',
+        originalPrice: 1600,
+        promoPrice: 1300,
+        discount: '19% OFF',
+        validFrom: '2026-06-01',
+        validTo: '2026-06-30',
+        imageUrl: null,
+        order: 4,
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now()
+      }
+    ];
+
+    for (const promo of promotionsSeed) {
+      await adminDb.collection('promotions').doc(promo.id).set(promo);
+    }
 
     return NextResponse.json({ success: true, message: 'Database seeded for testing' });
   } catch (error: any) {

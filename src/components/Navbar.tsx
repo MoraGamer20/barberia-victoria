@@ -15,11 +15,27 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('528341656549');
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/business-settings');
+        const data = await res.json();
+        if (data.settings?.whatsappNumber) {
+          setWhatsappNumber(data.settings.whatsappNumber.replace(/\D/g, ''));
+        }
+      } catch (err) {
+        console.error('Error fetching settings for Navbar:', err);
+      }
+    }
+    void fetchSettings();
   }, []);
 
   return (
@@ -49,7 +65,7 @@ export default function Navbar() {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <a
-              href="https://wa.me/5211234567890"
+              href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#25D366] hover:text-[#1da851] text-sm font-medium transition-colors"
@@ -102,7 +118,7 @@ export default function Navbar() {
                 ✂ Reservar Cita
               </Link>
               <a
-                href="https://wa.me/5211234567890"
+                href={`https://wa.me/${whatsappNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-[#25D366] text-white font-bold py-3 px-4 rounded-lg text-center hover:bg-[#1da851] transition-colors text-sm flex items-center justify-center gap-2"

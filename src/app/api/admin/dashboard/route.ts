@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { verifyAdmin } from '@/lib/adminAuth';
-import { format, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
+
+interface DashboardAppointment {
+  id: string;
+  startTime: string;
+  status?: string;
+  customerName?: string;
+  area?: string;
+  [key: string]: unknown;
+}
 
 export async function GET(request: Request) {
   try {
@@ -12,17 +21,19 @@ export async function GET(request: Request) {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const todayAppointmentsSnap = await adminDb.collection('appointments').where('date', '==', todayStr).get();
     
-    const todayAppointments = todayAppointmentsSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })).sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
+    const todayAppointments = todayAppointmentsSnap.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Record<string, unknown>),
+      } as DashboardAppointment))
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     // Stats
     let completed = 0;
     let cancelled = 0;
-    let todayCount = todayAppointmentsSnap.size;
+    const todayCount = todayAppointmentsSnap.size;
 
-    todayAppointments.forEach((app: any) => {
+    todayAppointments.forEach((app: DashboardAppointment) => {
       if (app.status === 'completed') completed++;
       if (app.status === 'cancelled') cancelled++;
     });
@@ -40,11 +51,11 @@ export async function GET(request: Request) {
 
     // Next Appointment
     const nowTime = format(new Date(), 'HH:mm');
-    const upcoming = todayAppointments.find((a: any) => a.startTime >= nowTime && a.status === 'confirmed');
+    const upcoming = todayAppointments.find((a) => a.startTime >= nowTime && a.status === 'confirmed');
     const nextAppointment = upcoming ? {
-      time: (upcoming as any).startTime as string,
-      client: (upcoming as any).customerName as string,
-      area: ((upcoming as any).area === 'barberia' ? 'Barbería' : 'Estética')
+      time: upcoming.startTime,
+      client: upcoming.customerName ?? 'Cliente',
+      area: upcoming.area === 'barberia' ? 'Barbería' : 'Estética'
     } : null;
 
     return NextResponse.json({
@@ -58,8 +69,9 @@ export async function GET(request: Request) {
       todayAppointments
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Dashboard Error:', error);
-    return NextResponse.json({ error: 'Unauthorized or Error', details: error.message }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized or Error', details: message }, { status: 401 });
   }
 }

@@ -1,6 +1,9 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-const WHATSAPP_NUMBER = '5211234567890';
+const DEFAULT_WHATSAPP_NUMBER = '528341656549';
 
 const PRODUCTS = [
   {
@@ -38,9 +41,26 @@ const PRODUCTS = [
 ];
 
 export default function ProductsSection() {
+  const [whatsappNumber, setWhatsappNumber] = useState(DEFAULT_WHATSAPP_NUMBER);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/business-settings');
+        const data = await res.json();
+        if (data.settings?.whatsappNumber) {
+          setWhatsappNumber(data.settings.whatsappNumber.replace(/\D/g, ''));
+        }
+      } catch (err) {
+        console.error('Error fetching settings for Products:', err);
+      }
+    }
+    void fetchSettings();
+  }, []);
+
   const makeWhatsAppUrl = (productName: string) => {
     const message = encodeURIComponent(`Hola, me interesa el producto: ${productName}. ¿Tienen disponibilidad?`);
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+    return `https://wa.me/${whatsappNumber}?text=${message}`;
   };
 
   return (
