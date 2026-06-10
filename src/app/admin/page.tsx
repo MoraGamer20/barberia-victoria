@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -28,12 +29,19 @@ export default function AdminDashboard() {
             'Authorization': `Bearer ${token}`
           }
         });
-        if (!res.ok) throw new Error('Error loading dashboard');
         const data = await res.json();
+        if (!res.ok) {
+          const msg = data.error || data.details || `Error ${res.status}`;
+          console.error('[Dashboard] API error:', msg, data);
+          setError(`${res.status}: ${msg}`);
+          return;
+        }
+        console.log('[Dashboard] Loaded stats:', data.stats);
         setStats(data.stats);
         setTodayAppointments(data.todayAppointments);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Dashboard Error:', err);
+        setError(`Error de red: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -42,7 +50,22 @@ export default function AdminDashboard() {
     loadDashboard();
   }, [user]);
 
-  if (loading) return <div className="text-white">Cargando dashboard...</div>;
+  if (loading) return <div className="text-white p-8">Cargando dashboard...</div>;
+
+  if (error) return (
+    <div className="space-y-4">
+      <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+        <p className="text-red-400 font-bold mb-2">⚠ Sin acceso al panel</p>
+        <p className="text-red-300 text-sm font-mono mb-3">{error}</p>
+        <p className="text-gray-400 text-sm">
+          Si ves <strong>Unauthorized role</strong>: abre en el navegador
+          {' '}<code className="text-gold-400">/api/setup-admin?email={user?.email}</code>{' '}
+          para registrarte como administrador, luego recarga esta página.
+        </p>
+      </div>
+    </div>
+  );
 
   const barberiaAppointments = todayAppointments.filter(a => a.area === 'barberia');
   const esteticaAppointments = todayAppointments.filter(a => a.area === 'estetica');

@@ -8,6 +8,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -15,15 +16,25 @@ export default function AppointmentsPage() {
 
   async function fetchAppointments() {
     if (!user) return;
+    setError(null);
     try {
       const token = await user.getIdToken();
       const res = await fetch('/api/admin/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
+      if (!res.ok) {
+        const msg = data.error || `Error ${res.status}`;
+        console.error('[Appointments] API error:', msg, data);
+        setError(`Error ${res.status}: ${msg}${data.details ? ' — ' + data.details : ''}`);
+        return;
+      }
+      console.log('[Appointments] Loaded:', data.appointments?.length, 'records');
       if (data.appointments) setAppointments(data.appointments);
-    } catch (err) {
-      console.error(err);
+      else setAppointments([]);
+    } catch (err: any) {
+      console.error('[Appointments] Fetch failed:', err);
+      setError(`Error de red: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -47,7 +58,28 @@ export default function AppointmentsPage() {
     }
   }
 
-  if (loading) return <div className="text-white">Cargando...</div>;
+  if (loading) return <div className="text-white p-8">Cargando citas...</div>;
+
+  if (error) return (
+    <div className="space-y-4">
+      <h1 className="text-3xl font-bold text-white">Citas</h1>
+      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6">
+        <p className="text-red-400 font-bold mb-2">⚠ Error al cargar las citas</p>
+        <p className="text-red-300 text-sm font-mono">{error}</p>
+        <p className="text-gray-400 text-sm mt-3">
+          Si ves <strong>401 / Unauthorized role</strong>: tu usuario no tiene el documento
+          en <code>Firestore &gt; users &gt; &#123;tu_uid&#125;</code> con <code>role: &quot;admin&quot;</code>.
+          Ve a <code>/api/setup-admin?email=TU_CORREO</code> para solucionarlo.
+        </p>
+        <button
+          onClick={fetchAppointments}
+          className="mt-4 px-4 py-2 bg-gold-500 text-dark-900 font-bold rounded-lg text-sm hover:bg-gold-400 transition-colors"
+        >
+          Reintentar
+        </button>
+      </div>
+    </div>
+  );
 
   const filteredAppointments = appointments.filter(a => filter === 'all' || a.status === filter);
 
