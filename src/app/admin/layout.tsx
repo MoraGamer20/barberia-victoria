@@ -2,11 +2,14 @@
 
 import Sidebar from '@/components/admin/Sidebar';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isLoginPage = pathname === '/admin/login';
 
   if (loading) {
     return (
@@ -14,6 +17,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="animate-spin w-12 h-12 border-4 border-gold-500 border-t-transparent rounded-full"></div>
       </div>
     );
+  }
+
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   // Double check, though AuthContext also handles this
