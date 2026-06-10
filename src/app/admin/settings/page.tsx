@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
+const DAYS_OF_WEEK = [
+  { name: 'Lunes', value: 1 },
+  { name: 'Martes', value: 2 },
+  { name: 'Miércoles', value: 3 },
+  { name: 'Jueves', value: 4 },
+  { name: 'Viernes', value: 5 },
+  { name: 'Sábado', value: 6 },
+  { name: 'Domingo', value: 0 },
+];
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -14,6 +24,7 @@ export default function SettingsPage() {
     address: '',
     instagram: '',
     facebook: '',
+    closedDays: [] as number[],
   });
 
   useEffect(() => {
@@ -37,6 +48,7 @@ export default function SettingsPage() {
           address: data.settings.address || '',
           instagram: data.settings.instagram || '',
           facebook: data.settings.facebook || '',
+          closedDays: data.settings.closedDays || [],
         });
       } catch (error) {
         console.error(error);
@@ -119,6 +131,47 @@ export default function SettingsPage() {
                 className="w-full rounded-lg border border-white/10 bg-dark-900 p-3 text-white"
                 aria-label="Horario de cierre"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-300 mb-2 font-medium">Días Laborables</label>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {DAYS_OF_WEEK.map((day) => {
+                const isActive = !settings.closedDays.includes(day.value);
+                return (
+                  <div
+                    key={day.value}
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      isActive
+                        ? 'border-gold-500/30 bg-gold-500/5 text-white'
+                        : 'border-white/10 bg-dark-900/40 text-gray-500'
+                    }`}
+                  >
+                    <span className="font-medium text-sm">{day.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newClosedDays = isActive
+                          ? [...settings.closedDays, day.value]
+                          : settings.closedDays.filter((d) => d !== day.value);
+                        setSettings((prev) => ({ ...prev, closedDays: newClosedDays }));
+                      }}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isActive ? 'bg-gold-500' : 'bg-gray-700'
+                      }`}
+                      role="switch"
+                      aria-checked={isActive}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          isActive ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div>

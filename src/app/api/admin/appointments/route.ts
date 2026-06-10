@@ -25,8 +25,8 @@ export async function GET(request: Request) {
         const aTime = String(a.startTime);
         const bTime = String(b.startTime);
 
-        if (aDate === bDate) return bTime.localeCompare(aTime);
-        return bDate.localeCompare(aDate);
+        if (aDate === bDate) return aTime.localeCompare(bTime);
+        return aDate.localeCompare(bDate);
       });
 
     return NextResponse.json({ appointments });

@@ -129,31 +129,101 @@ export default function AppointmentsPage() {
                     <div className="text-sm text-gray-400">{a.customerPhone}</div>
                   </td>
                   <td className="p-4">{a.serviceName}</td>
-                  <td className="p-4">{a.professionalId}</td>
+                  <td className="p-4">{a.professionalName || a.professionalId || 'No asignado'}</td>
                   <td className="p-4">
                     <span className={`px-2 py-1 text-xs rounded-full uppercase tracking-wider
                       ${a.status === 'completed' ? 'bg-green-500/20 text-green-400' : ''}
                       ${a.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400' : ''}
+                      ${a.status === 'in_process' ? 'bg-indigo-500/20 text-indigo-400' : ''}
+                      ${a.status === 'postponed' ? 'bg-orange-500/20 text-orange-400' : ''}
                       ${a.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : ''}
                       ${a.status === 'cancelled' ? 'bg-red-500/20 text-red-400' : ''}
                     `}>
-                      {a.status}
+                      {a.status === 'in_process' ? 'En proceso' : a.status === 'postponed' ? 'Pospuesta' : a.status === 'completed' ? 'Terminada' : a.status === 'confirmed' ? 'Confirmada' : a.status === 'pending' ? 'Pendiente' : a.status}
                     </span>
                   </td>
                   <td className="p-4">
-                    <select 
-                      className="bg-dark-900 border border-white/10 rounded p-1 text-sm focus:border-gold-500"
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value) updateStatus(a.id, e.target.value);
-                      }}
-                    >
-                      <option value="" disabled>Cambiar a...</option>
-                      {a.status !== 'confirmed' && <option value="confirmed">Confirmar</option>}
-                      {a.status !== 'completed' && <option value="completed">Completar</option>}
-                      {a.status !== 'cancelled' && <option value="cancelled">Cancelar</option>}
-                      {a.status !== 'pending' && <option value="pending">Pendiente</option>}
-                    </select>
+                    <div className="flex flex-wrap gap-1">
+                      {a.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(a.id, 'confirmed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/35 transition-colors"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'postponed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 transition-colors"
+                          >
+                            Posponer
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'cancelled')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 hover:bg-red-500/35 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                      {a.status === 'confirmed' && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(a.id, 'in_process')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/35 transition-colors"
+                          >
+                            Iniciar
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'postponed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 transition-colors"
+                          >
+                            Posponer
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'cancelled')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 hover:bg-red-500/35 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                      {a.status === 'in_process' && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(a.id, 'completed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-green-500/20 text-green-400 hover:bg-green-500/35 transition-colors"
+                          >
+                            Terminar
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'postponed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-orange-500/20 text-orange-400 hover:bg-orange-500/35 transition-colors"
+                          >
+                            Posponer
+                          </button>
+                        </>
+                      )}
+                      {a.status === 'postponed' && (
+                        <>
+                          <button
+                            onClick={() => updateStatus(a.id, 'confirmed')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-500/20 text-blue-400 hover:bg-blue-500/35 transition-colors"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() => updateStatus(a.id, 'cancelled')}
+                            className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-500/20 text-red-400 hover:bg-red-500/35 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                      {(a.status === 'completed' || a.status === 'cancelled') && (
+                        <span className="text-gray-500 text-xs font-mono">-</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

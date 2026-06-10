@@ -29,13 +29,17 @@ export async function GET(request: Request) {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     // Stats
+    let pending = 0;
+    let inProcess = 0;
     let completed = 0;
     let cancelled = 0;
     const todayCount = todayAppointmentsSnap.size;
 
     todayAppointments.forEach((app: DashboardAppointment) => {
-      if (app.status === 'completed') completed++;
-      if (app.status === 'cancelled') cancelled++;
+      if (app.status === 'pending') pending++;
+      else if (app.status === 'in_process') inProcess++;
+      else if (app.status === 'completed') completed++;
+      else if (app.status === 'cancelled') cancelled++;
     });
 
     // Approximate "This Week" (we will just query >= startOfWeek)
@@ -62,6 +66,8 @@ export async function GET(request: Request) {
       stats: {
         today: todayCount,
         thisWeek: thisWeekCount,
+        pending,
+        inProcess,
         completed,
         cancelled,
         nextAppointment

@@ -24,6 +24,7 @@ export default function BookingWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('528341656549');
+  const [closedDays, setClosedDays] = useState<number[]>([]);
 
   const setArea = (area: Area) => {
     setState(prev => ({ ...prev, area, service: null, professional: null, date: null, time: null }));
@@ -45,6 +46,9 @@ export default function BookingWizard() {
         if (profData.professionals) setProfessionals(profData.professionals);
         if (settingsData.settings?.whatsappNumber) {
           setWhatsappNumber(settingsData.settings.whatsappNumber.replace(/\D/g, ''));
+        }
+        if (settingsData.settings?.closedDays) {
+          setClosedDays(settingsData.settings.closedDays);
         }
       } catch (err) {
         console.error('Error fetching catalogs and settings', err);
@@ -215,16 +219,26 @@ export default function BookingWizard() {
         <div className="space-y-4">
           <h3 className="text-xl text-gray-200 font-medium mb-4">Selecciona el Día</h3>
           <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-            {nextDays.map(date => (
-              <button 
-                key={date} 
-                onClick={() => setDate(date)}
-                className="p-3 bg-dark-700 border border-white/5 hover:border-gold-500 rounded-lg flex flex-col items-center"
-              >
-                <span className="text-xs text-gray-400 uppercase">{format(new Date(date), 'EEE', { locale: es })}</span>
-                <span className="text-lg font-bold text-white">{format(new Date(date), 'dd')}</span>
-              </button>
-            ))}
+            {nextDays.map(date => {
+              const dateObj = new Date(date + 'T00:00:00');
+              const dayOfWeek = dateObj.getDay();
+              const isClosed = closedDays.includes(dayOfWeek);
+              return (
+                <button 
+                  key={date} 
+                  disabled={isClosed}
+                  onClick={() => setDate(date)}
+                  className={`p-3 border rounded-lg flex flex-col items-center transition-colors ${
+                    isClosed
+                      ? 'bg-dark-900 border-white/5 opacity-40 cursor-not-allowed text-gray-500'
+                      : 'bg-dark-700 border-white/5 hover:border-gold-500'
+                  }`}
+                >
+                  <span className="text-xs text-gray-400 uppercase">{format(dateObj, 'EEE', { locale: es })}</span>
+                  <span className="text-lg font-bold text-white">{format(dateObj, 'dd')}</span>
+                </button>
+              );
+            })}
           </div>
           <button onClick={() => setStep(3)} className="mt-4 text-sm text-gray-400 hover:text-white">← Volver</button>
         </div>

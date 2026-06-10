@@ -55,6 +55,12 @@ export async function POST(request: Request) {
       if (!professional.active) throw new Error('Professional is inactive');
       if (!service.isActive) throw new Error('Service is inactive');
 
+      // Check if day of week is closed
+      const dayOfWeek = requestedDate.getDay();
+      if (settings.closedDays && settings.closedDays.includes(dayOfWeek)) {
+        throw new Error('Este día de la semana está deshabilitado para reservas.');
+      }
+
       // 2. Fetch dynamically changing collections within the transaction (locks them if using optimistic locking)
       // Since Firestore doesn't lock queries, we query, but if someone inserts, the write will fail if we set a lock document or if we read a document that changes. 
       // Firestore transactions require reads before writes. 

@@ -15,7 +15,8 @@ export async function GET() {
           whatsappNumber: '528341656549',
           address: 'Calle Principal #123, Centro',
           instagram: 'https://www.instagram.com/',
-          facebook: 'https://www.facebook.com/'
+          facebook: 'https://www.facebook.com/',
+          closedDays: [],
         },
       });
     }

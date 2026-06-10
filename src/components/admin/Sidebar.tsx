@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Users, Scissors, Clock, LogOut, LayoutDashboard, Tag, Settings } from 'lucide-react';
+import { Calendar, Users, Scissors, Clock, LogOut, LayoutDashboard, Tag, Settings, Tablet } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
 const NAV_ITEMS = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Citas', href: '/admin/appointments', icon: Calendar },
+  { name: 'Vista Tablet', href: '/admin/tablet', icon: Tablet },
   { name: 'Bloqueos', href: '/admin/blocks', icon: Clock },
   { name: 'Servicios', href: '/admin/services', icon: Scissors },
   { name: 'Profesionales', href: '/admin/professionals', icon: Users },
