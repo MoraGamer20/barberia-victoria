@@ -44,11 +44,12 @@ export function calculateAvailableSlots(
       break;
     }
 
-    // Check if it's in the past (if the date is today)
-    const now = new Date();
-    if (isEqual(startOfDay(currentDate), startOfDay(now))) {
-      // It's today, check if slot is already passed
-      if (isBefore(currentSlot, now)) {
+    // Check if it's in the past (if the date is today) using business timezone (America/Mexico_City)
+    const nowLocal = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+    const todayStr = format(nowLocal, 'yyyy-MM-dd');
+    if (dateStr === todayStr) {
+      // It's today, check if slot is already passed in local time
+      if (isBefore(currentSlot, nowLocal)) {
         currentSlot = addMinutes(currentSlot, 30);
         continue;
       }

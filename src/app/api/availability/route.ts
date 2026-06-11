@@ -16,9 +16,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
 
-    // 1. Check if date is in the past
-    const requestedDate = parse(date, 'yyyy-MM-dd', new Date());
-    if (isBefore(startOfDay(requestedDate), startOfDay(new Date()))) {
+    // 1. Check if date is in the past using business timezone (America/Mexico_City)
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+
+    if (date < todayStr) {
       return NextResponse.json({ error: 'Cannot book in the past' }, { status: 400 });
     }
 
