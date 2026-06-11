@@ -67,8 +67,7 @@ export async function POST(request: Request) {
       // To strictly prevent overlapping, we read all conflicting appointments for this day/professional.
       const appointmentsQuery = adminDb.collection('appointments')
         .where('date', '==', date)
-        .where('professionalId', '==', professionalId)
-        .where('status', '==', 'confirmed');
+        .where('professionalId', '==', professionalId);
         
       const blockedTimesQuery = adminDb.collection('blocked_times')
         .where('date', '==', date)
@@ -88,7 +87,11 @@ export async function POST(request: Request) {
         throw new Error('This day is completely blocked');
       }
 
-      const occupiedIntervals = appointmentsSnap.docs.map(d => ({ start: d.data().startTime, end: d.data().endTime }));
+      const occupiedIntervals = appointmentsSnap.docs
+        .map(d => d.data())
+        .filter(data => data.status !== 'cancelled' && data.status !== 'completed')
+        .map(data => ({ start: data.startTime, end: data.endTime }));
+
       const blockedIntervals = blockedTimesSnap.docs.map(d => ({ start: d.data().startTime, end: d.data().endTime }));
 
       // 3. Double validate Availability!

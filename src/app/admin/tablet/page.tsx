@@ -121,7 +121,12 @@ export default function TabletDashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    // Use business timezone (America/Mexico_City) so "today" matches the local date
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Mexico_City',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+
     const q = query(
       collection(db, 'appointments'),
       where('date', '==', todayStr)
@@ -168,6 +173,27 @@ export default function TabletDashboard() {
     } catch (err) {
       console.error(err);
       alert('No se pudo actualizar el estado de la cita.');
+    }
+  }
+
+  async function handleDeleteAppointment(id: string) {
+    if (!user) return;
+    if (!window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta cita? Esta acción no se puede deshacer.')) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/admin/appointments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error deleting appointment');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(`No se pudo eliminar la cita: ${err.message}`);
     }
   }
 
@@ -222,7 +248,14 @@ export default function TabletDashboard() {
             <span className="text-[10px] text-green-400 font-bold tracking-widest uppercase">Panel En Vivo</span>
           </div>
           <h1 className="text-3xl font-black text-white capitalize">
-            {format(new Date(), 'eeee, d \'de\' MMMM', { locale: es })}
+            {format(
+              (() => {
+                const s = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                const [y, m, d] = s.split('-').map(Number);
+                return new Date(y, m - 1, d);
+              })(),
+              'eeee, d \'de\' MMMM', { locale: es }
+            )}
           </h1>
           <p className="text-gray-400 text-sm mt-0.5">Pantalla de control operativa para tablet.</p>
         </div>
@@ -415,6 +448,12 @@ export default function TabletDashboard() {
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => handleDeleteAppointment(app.id)}
+                      className="px-4 py-2.5 text-xs font-bold rounded-xl bg-red-600/30 text-red-300 hover:bg-red-600/40 active:scale-95 transition-all min-h-[44px]"
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </div>
               ))}
@@ -450,13 +489,22 @@ export default function TabletDashboard() {
                     <p className="text-[11px] text-gray-400">{app.serviceName}</p>
                   </div>
 
-                  <span
-                    className={`px-2 py-0.5 text-[8px] font-bold uppercase rounded border ${
-                      STATUS_COLORS[app.status]
-                    }`}
-                  >
-                    {STATUS_LABELS[app.status]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 text-[8px] font-bold uppercase rounded border ${
+                        STATUS_COLORS[app.status]
+                      }`}
+                    >
+                      {STATUS_LABELS[app.status]}
+                    </span>
+                    <button
+                      onClick={() => handleDeleteAppointment(app.id)}
+                      className="p-1.5 rounded bg-red-600/20 text-red-300 hover:bg-red-600/40 active:scale-95 transition-all"
+                      title="Eliminar permanentemente"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

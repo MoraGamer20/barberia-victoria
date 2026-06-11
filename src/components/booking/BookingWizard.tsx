@@ -137,8 +137,14 @@ export default function BookingWizard() {
   const filteredServices = services.filter(s => s.area === state.area);
   const filteredProfessionals = professionals.filter(p => p.area === state.area);
 
-  // Generate next 7 days for date selector (starting today if not too late, or tomorrow)
-  const nextDays = Array.from({ length: 7 }).map((_, i) => format(addDays(new Date(), i), 'yyyy-MM-dd'));
+  // Generate next 7 days starting from local Mexico City "today"
+  const todayMexicoStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+  const [ty, tm, td] = todayMexicoStr.split('-').map(Number);
+  const todayLocal = new Date(ty, tm - 1, td);
+  const nextDays = Array.from({ length: 7 }).map((_, i) => format(addDays(todayLocal, i), 'yyyy-MM-dd'));
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6 bg-dark-800 rounded-xl border border-white/10 shadow-2xl relative">

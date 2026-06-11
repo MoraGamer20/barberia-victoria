@@ -73,7 +73,6 @@ export async function GET(request: Request) {
       adminDb.collection('appointments')
         .where('date', '==', date)
         .where('professionalId', '==', professionalId)
-        .where('status', '==', 'confirmed') // Only confirmed appointments block time
         .get()
     ]);
 
@@ -82,10 +81,10 @@ export async function GET(request: Request) {
       return { start: data.startTime, end: data.endTime };
     });
 
-    const occupiedIntervals = appointmentsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return { start: data.startTime, end: data.endTime };
-    });
+    const occupiedIntervals = appointmentsSnapshot.docs
+      .map(doc => doc.data())
+      .filter(data => data.status !== 'cancelled' && data.status !== 'completed')
+      .map(data => ({ start: data.startTime, end: data.endTime }));
 
     // 7. Calculate available slots
     const availableSlots = calculateAvailableSlots(
