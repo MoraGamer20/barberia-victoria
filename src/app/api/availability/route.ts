@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { calculateAvailableSlots } from '@/lib/timeUtils';
-import { parse, isBefore, startOfDay } from 'date-fns';
+
 
 export async function GET(request: Request) {
   try {
@@ -48,7 +48,8 @@ export async function GET(request: Request) {
     if (!service.isActive) return NextResponse.json({ error: 'Service is not active' }, { status: 400 });
 
     // 4. Check if day of week is closed
-    const dayOfWeek = requestedDate.getDay();
+    const [y, m, d] = date.split('-').map(Number);
+    const dayOfWeek = new Date(y, m - 1, d).getDay();
     if (settings.closedDays && settings.closedDays.includes(dayOfWeek)) {
       return NextResponse.json({ slots: [] }); // Day is closed
     }
