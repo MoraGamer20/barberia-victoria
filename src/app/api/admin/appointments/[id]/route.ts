@@ -70,3 +70,37 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: message }, { status: message === 'Invalid token' ? 401 : 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const decodedToken = await verifyAdmin(request);
+    const { id } = await params;
+
+    const appRef = adminDb.collection('appointments').doc(id);
+    const appDoc = await appRef.get();
+
+    if (!appDoc.exists) {
+      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+    }
+
+    const appData = appDoc.data()!;
+    const calendarEventId = appData.googleCalendarEventId;
+
+    // Google Calendar Sync
+    if (calendarEventId && process.env.NEXT_PUBLIC_ENABLE_GOOGLE_CALENDAR === 'true') {
+      try {
+        await deleteCalendarEvent(calendarEventId);
+      } catch (calErr) {
+        console.error('[Google Calendar] DELETE sync error:', calErr);
+      }
+    }
+
+    await appRef.delete();
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Delete appointment error:', error);
+    return NextResponse.json({ error: message }, { status: message === 'Invalid token' ? 401 : 500 });
+  }
+}

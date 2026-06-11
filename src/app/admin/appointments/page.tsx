@@ -58,6 +58,28 @@ export default function AppointmentsPage() {
     }
   }
 
+  async function deleteAppointment(id: string) {
+    if (!user) return;
+    if (!window.confirm('¿Estás seguro de que deseas eliminar permanentemente esta cita? Esta acción no se puede deshacer.')) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/admin/appointments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error deleting appointment');
+      }
+      fetchAppointments();
+    } catch (err: any) {
+      console.error(err);
+      alert(`No se pudo eliminar la cita: ${err.message}`);
+    }
+  }
+
   if (loading) return <div className="text-white p-8">Cargando citas...</div>;
 
   if (error) return (
@@ -143,7 +165,7 @@ export default function AppointmentsPage() {
                     </span>
                   </td>
                   <td className="p-4">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5 items-center">
                       {a.status === 'pending' && (
                         <>
                           <button
@@ -220,9 +242,14 @@ export default function AppointmentsPage() {
                           </button>
                         </>
                       )}
-                      {(a.status === 'completed' || a.status === 'cancelled') && (
-                        <span className="text-gray-500 text-xs font-mono">-</span>
-                      )}
+                      
+                      <button
+                        onClick={() => deleteAppointment(a.id)}
+                        className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-600/30 text-red-300 hover:bg-red-600/50 border border-red-500/25 transition-colors"
+                        title="Eliminar permanentemente"
+                      >
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
