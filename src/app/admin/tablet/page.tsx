@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -51,33 +49,32 @@ export default function TabletDashboard() {
     if (!user) return;
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const q = query(
-      collection(db, 'appointments'),
-      where('date', '==', todayStr)
-    );
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const list = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Appointment[];
+    async function loadAppointments() {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/admin/appointments', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Error al cargar citas');
+        }
 
-        // Sort chronologically ascending
-        list.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        const list = (data.appointments || [])
+          .filter((a: Appointment) => a.date === todayStr)
+          .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime));
 
         setAppointments(list);
         setLoading(false);
-      },
-      (err) => {
-        console.error('Real-time listener error:', err);
+      } catch (err: any) {
+        console.error('Tablet fetch error:', err);
         setError(err.message);
         setLoading(false);
       }
-    );
+    }
 
-    return () => unsubscribe();
+    loadAppointments();
   }, [user]);
 
   async function handleUpdateStatus(id: string, newStatus: string) {
