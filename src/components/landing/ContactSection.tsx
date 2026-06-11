@@ -17,7 +17,7 @@ export default function ContactSection() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const res = await fetch('/api/business-settings');
+        const res = await fetch(`/api/business-settings?t=${Date.now()}`);
         const data = await res.json();
         if (data.settings) {
           setSettings({

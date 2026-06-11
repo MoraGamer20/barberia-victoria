@@ -46,7 +46,7 @@ export default function ProductsSection() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch('/api/business-settings');
+        const res = await fetch(`/api/business-settings?t=${Date.now()}`);
         const data = await res.json();
         if (data.settings?.whatsappNumber) {
           setWhatsappNumber(data.settings.whatsappNumber.replace(/\D/g, ''));

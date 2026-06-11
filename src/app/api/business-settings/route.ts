@@ -8,7 +8,7 @@ export async function GET() {
     const doc = await adminDb.collection('business_settings').doc('default').get();
 
     if (!doc.exists) {
-      return NextResponse.json({
+      const response = NextResponse.json({
         settings: {
           openingTime: '09:00',
           closingTime: '20:00',
@@ -19,9 +19,13 @@ export async function GET() {
           closedDays: [],
         },
       });
+      response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+      return response;
     }
 
-    return NextResponse.json({ settings: doc.data() });
+    const response = NextResponse.json({ settings: doc.data() });
+    response.headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate');
+    return response;
   } catch (error: any) {
     if (error?.message?.includes('SDK is not initialized')) {
       return NextResponse.json(

@@ -37,7 +37,7 @@ export default function BookingWizard() {
         const [servRes, profRes, settingsRes] = await Promise.all([
           fetch('/api/services'),
           fetch('/api/professionals'),
-          fetch('/api/business-settings')
+          fetch(`/api/business-settings?t=${Date.now()}`)
         ]);
         const servData = await servRes.json();
         const profData = await profRes.json();
