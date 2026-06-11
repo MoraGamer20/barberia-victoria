@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { verifyAdmin } from '@/lib/adminAuth';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek } from 'date-fns';
+
+// Helper: get current date/time string in the business timezone
+const getMexicoDateStr = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Mexico_City',
+  year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(new Date());
+
+const getMexicoTimeStr = () => new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'America/Mexico_City',
+  hour: '2-digit', minute: '2-digit', hour12: false
+}).format(new Date());
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +29,7 @@ export async function GET(request: Request) {
   try {
     await verifyAdmin(request);
 
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todayStr = getMexicoDateStr();
     const todayAppointmentsSnap = await adminDb.collection('appointments').where('date', '==', todayStr).get();
     
     const todayAppointments = todayAppointmentsSnap.docs
@@ -43,8 +54,11 @@ export async function GET(request: Request) {
     });
 
     // Approximate "This Week" (we will just query >= startOfWeek)
-    const startWeekStr = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-    const endWeekStr = format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    // Build a local Date object from the Mexico date string so week math is correct
+    const [ty, tm, td] = todayStr.split('-').map(Number);
+    const localToday = new Date(ty, tm - 1, td);
+    const startWeekStr = startOfWeek(localToday, { weekStartsOn: 1 }).toISOString().slice(0, 10);
+    const endWeekStr = endOfWeek(localToday, { weekStartsOn: 1 }).toISOString().slice(0, 10);
     
     const weekSnap = await adminDb.collection('appointments')
       .where('date', '>=', startWeekStr)
@@ -54,7 +68,7 @@ export async function GET(request: Request) {
     const thisWeekCount = weekSnap.size;
 
     // Next Appointment
-    const nowTime = format(new Date(), 'HH:mm');
+    const nowTime = getMexicoTimeStr();
     const upcoming = todayAppointments.find((a) => a.startTime >= nowTime && a.status === 'confirmed');
     const nextAppointment = upcoming ? {
       time: upcoming.startTime,
