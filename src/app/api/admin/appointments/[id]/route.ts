@@ -11,7 +11,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const decodedToken = await verifyAdmin(request);
     const { id } = await params;
     const body = await request.json();
-    const { status, date, startTime, endTime } = body;
+    const { status, date, startTime, endTime, reminderSent, reminderSentAt, reminderSentBy, newReminder } = body;
 
     const updateData: Record<string, unknown> = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -25,6 +25,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       updateData.date = date;
       updateData.startTime = startTime;
       updateData.endTime = endTime;
+    }
+
+    if (reminderSent !== undefined) {
+      updateData.reminderSent = reminderSent;
+      updateData.reminderSentAt = reminderSentAt;
+      updateData.reminderSentBy = reminderSentBy;
+      if (newReminder) {
+        updateData.reminderHistory = admin.firestore.FieldValue.arrayUnion(newReminder);
+      }
     }
 
     // Google Calendar Sync

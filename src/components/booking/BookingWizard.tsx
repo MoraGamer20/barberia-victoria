@@ -295,21 +295,36 @@ export default function BookingWizard() {
         <div className="space-y-6 text-center py-8">
           <h3 className="text-3xl font-bold text-white mb-2">¡Cita Confirmada! ✅</h3>
           <p className="text-gray-400 mb-4">Reserva para {state.date} a las {state.time}</p>
-          <a
-            href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-              `Hola, acabo de reservar una cita:\n` +
-              `📅 Fecha: ${state.date}\n` +
-              `🕐 Hora: ${state.time}\n` +
-              `💈 Servicio: ${state.service?.name || ''}\n` +
-              `👤 Profesional: ${state.professional?.name || ''}\n` +
-              `Quedo atento a la confirmación.`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full px-6 py-4 bg-[#25D366] text-white font-bold rounded-lg flex justify-center items-center gap-2 hover:bg-[#1da851] transition-colors"
-          >
-            Confirmar por WhatsApp
-          </a>
+          <div className="flex flex-col gap-3">
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+                `Hola, acabo de reservar una cita:\n` +
+                `📅 Fecha: ${state.date}\n` +
+                `🕐 Hora: ${state.time}\n` +
+                `💈 Servicio: ${state.service?.name || ''}\n` +
+                `👤 Profesional: ${state.professional?.name || ''}\n` +
+                `Quedo atento a la confirmación.`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full px-6 py-4 bg-[#25D366] text-white font-bold rounded-lg flex justify-center items-center gap-2 hover:bg-[#1da851] transition-colors"
+            >
+              Confirmar por WhatsApp
+            </a>
+            
+            <a
+              href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Cita en YAYA Barbería: ${state.service?.name}`)}&dates=${
+                state.date && state.time 
+                  ? new Date(`${state.date}T${state.time}:00`).toISOString().replace(/-|:|\.\d\d\d/g, '') + '/' + new Date(new Date(`${state.date}T${state.time}:00`).getTime() + (state.service?.durationMinutes || 60) * 60000).toISOString().replace(/-|:|\.\d\d\d/g, '')
+                  : ''
+              }&details=${encodeURIComponent(`Servicio: ${state.service?.name}\nProfesional: ${state.professional?.name}`)}&location=${encodeURIComponent('YAYA Barbería')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full px-6 py-4 bg-white text-dark-900 font-bold rounded-lg flex justify-center items-center gap-2 hover:bg-gray-100 transition-colors"
+            >
+              📅 Agregar a Google Calendar
+            </a>
+          </div>
         </div>
       )}
     </div>

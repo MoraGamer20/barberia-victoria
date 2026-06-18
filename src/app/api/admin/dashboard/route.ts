@@ -44,6 +44,7 @@ export async function GET(request: Request) {
     let inProcess = 0;
     let completed = 0;
     let cancelled = 0;
+    let remindersSentToday = 0;
     const todayCount = todayAppointmentsSnap.size;
 
     todayAppointments.forEach((app: DashboardAppointment) => {
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
       else if (app.status === 'in_process') inProcess++;
       else if (app.status === 'completed') completed++;
       else if (app.status === 'cancelled') cancelled++;
+      
+      if (app.reminderSent) remindersSentToday++;
     });
 
     // Approximate "This Week" (we will just query >= startOfWeek)
@@ -84,6 +87,7 @@ export async function GET(request: Request) {
         inProcess,
         completed,
         cancelled,
+        remindersSentToday,
         nextAppointment
       },
       todayAppointments

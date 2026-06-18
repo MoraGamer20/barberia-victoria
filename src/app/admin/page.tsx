@@ -11,6 +11,7 @@ interface DashboardStats {
   inProcess: number;
   completed: number;
   cancelled: number;
+  remindersSentToday?: number;
   nextAppointment: any | null;
 }
 
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
   const [newStartTime, setNewStartTime] = useState('');
   const [newEndTime, setNewEndTime] = useState('');
   const [rescheduling, setRescheduling] = useState(false);
+  const [reminderFilter, setReminderFilter] = useState<'all' | 'pending' | 'sent'>('all');
 
   const parseTime = (t: string) => {
     const [h, m] = t.split(':').map(Number);
@@ -127,6 +129,75 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleSendReminder(app: any) {
+    if (!user) return;
+    
+    // Check 12 hours limit
+    if (app.reminderSent && app.reminderSentAt) {
+      const sentTime = new Date(app.reminderSentAt).getTime();
+      const now = new Date().getTime();
+      const hoursSince = (now - sentTime) / (1000 * 60 * 60);
+      
+      if (hoursSince < 12) {
+        const confirm = window.confirm(`Este cliente ya recibió un recordatorio hace ${Math.max(1, Math.round(hoursSince))} horas. ¿Deseas enviar otro?`);
+        if (!confirm) return;
+      }
+    }
+    
+    // Prepare WhatsApp message
+    const phone = app.customerPhone ? app.customerPhone.replace(/\D/g, '') : '';
+    if (!phone) {
+      alert('El cliente no tiene un número de teléfono válido registrado.');
+      return;
+    }
+    
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(tomorrow);
+    
+    let dateText = app.date;
+    if (app.date === todayStr) dateText = 'hoy';
+    else if (app.date === tomorrowStr) dateText = 'mañana';
+    else dateText = `el ${app.date}`;
+    
+    const message = `Hola ${app.customerName || 'Cliente'} 👋\n\nTe recordamos tu cita para ${dateText} a las ${app.startTime}.\n\nResponde:\n\n✅ CONFIRMO\n\no\n\n🔄 REPROGRAMAR`;
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
+    
+    // Update API
+    try {
+      const token = await user.getIdToken();
+      const newHistoryItem = {
+        date: new Date().toISOString(),
+        method: 'whatsapp',
+        sentBy: user.email || 'Admin'
+      };
+      
+      const res = await fetch(`/api/admin/appointments/${app.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reminderSent: true,
+          reminderSentAt: new Date().toISOString(),
+          reminderSentBy: user.email || 'Admin',
+          newReminder: newHistoryItem
+        })
+      });
+      
+      if (res.ok) {
+        await refreshDashboardData(token);
+      }
+    } catch (err) {
+      console.error('Error saving reminder status:', err);
+    }
+  }
+
   async function handleConfirmPostpone() {
     if (!postponeAppointment || !user) return;
     setRescheduling(true);
@@ -215,10 +286,16 @@ export default function AdminDashboard() {
     cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
   };
 
-  const activeAppointments = todayAppointments.filter(
+  const filteredAppointments = todayAppointments.filter(app => {
+    if (reminderFilter === 'pending') return !app.reminderSent;
+    if (reminderFilter === 'sent') return app.reminderSent;
+    return true;
+  });
+
+  const activeAppointments = filteredAppointments.filter(
     (a) => a.status !== 'completed' && a.status !== 'cancelled'
   );
-  const finishedAppointments = todayAppointments.filter(
+  const finishedAppointments = filteredAppointments.filter(
     (a) => a.status === 'completed' || a.status === 'cancelled'
   );
 
@@ -252,17 +329,30 @@ export default function AdminDashboard() {
             📅 {app.date}
           </p>
         </div>
-        <span
-          className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${
-            STATUS_COLORS[app.status] || 'bg-gray-500/10 text-gray-300 border-gray-500/20'
-          }`}
-        >
-          {STATUS_LABELS[app.status] || app.status}
-        </span>
+        <div className="flex flex-col items-end gap-1.5">
+          <span
+            className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded border ${
+              STATUS_COLORS[app.status] || 'bg-gray-500/10 text-gray-300 border-gray-500/20'
+            }`}
+          >
+            {STATUS_LABELS[app.status] || app.status}
+          </span>
+          <span className={`px-2 py-1 text-[10px] font-bold rounded border ${app.reminderSent ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}`}>
+            {app.reminderSent ? '🟢 Recordatorio enviado' : '🟡 Pendiente de recordar'}
+          </span>
+        </div>
       </div>
 
       {/* Acciones de un solo clic */}
       <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-1.5 items-center">
+        {['pending', 'confirmed', 'postponed'].includes(app.status) && (
+          <button
+            onClick={() => handleSendReminder(app)}
+            className="px-2 py-1 text-[11px] font-bold rounded bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366]/20 transition-colors mr-auto"
+          >
+            📱 Recordar Cliente
+          </button>
+        )}
         {app.status === 'pending' && (
           <>
             <button
@@ -378,6 +468,32 @@ export default function AdminDashboard() {
           <p className="text-gray-400 text-sm mb-1">Citas Canceladas</p>
           <p className="text-3xl font-bold text-red-500">{stats?.cancelled || 0}</p>
         </div>
+        <div className="bg-dark-800 p-6 rounded-xl border border-white/5 shadow-lg">
+          <p className="text-gray-400 text-sm mb-1">Recordatorios Enviados</p>
+          <p className="text-3xl font-bold text-blue-400">{stats?.remindersSentToday || 0}</p>
+        </div>
+      </div>
+
+      {/* Filtros de Recordatorios */}
+      <div className="flex flex-wrap gap-2">
+        <button 
+          onClick={() => setReminderFilter('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${reminderFilter === 'all' ? 'bg-gold-500 text-dark-900' : 'bg-dark-800 text-gray-400 hover:text-white border border-white/10 hover:border-white/20'}`}
+        >
+          Todos
+        </button>
+        <button 
+          onClick={() => setReminderFilter('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 ${reminderFilter === 'pending' ? 'bg-gold-500 text-dark-900' : 'bg-dark-800 text-gray-400 hover:text-white border border-white/10 hover:border-white/20'}`}
+        >
+          <span>🟡</span> Pendientes de recordar
+        </button>
+        <button 
+          onClick={() => setReminderFilter('sent')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 ${reminderFilter === 'sent' ? 'bg-gold-500 text-dark-900' : 'bg-dark-800 text-gray-400 hover:text-white border border-white/10 hover:border-white/20'}`}
+        >
+          <span>🟢</span> Recordatorios enviados
+        </button>
       </div>
 
       {/* Agenda Activa */}
